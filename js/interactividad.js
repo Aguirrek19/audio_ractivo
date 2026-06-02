@@ -17,6 +17,8 @@ const regenerationDuration = 1500;
 let cellsVisible = 0;
 let lastCellAppearance = 0;
 const cellAppearanceInterval = 1500;
+const CURSOR_ATTRACTION_RADIUS = 420;
+const CURSOR_ATTRACTION_STRENGTH = 0.4;
 
 function preload() {
     soundFile = loadSound('./audio/butterfly.mp3');
@@ -183,8 +185,14 @@ function updateCellularSystem(level, spectrum) {
         let noiseX = noise(cell.noiseOffsetX + millis() * cell.noiseSpeed);
         let noiseY = noise(cell.noiseOffsetY + millis() * cell.noiseSpeed);
         
-        cell.x = cell.baseX + map(noiseX, 0, 1, -30, 30);
-        cell.y = cell.baseY + map(noiseY, 0, 1, -30, 30);
+        let organicX = cell.baseX + map(noiseX, 0, 1, -30, 30);
+        let organicY = cell.baseY + map(noiseY, 0, 1, -30, 30);
+        let cursorDistance = dist(organicX, organicY, mouseX, mouseY);
+        let cursorPull = constrain(map(cursorDistance, 0, CURSOR_ATTRACTION_RADIUS, 1, 0), 0, 1);
+        cursorPull *= CURSOR_ATTRACTION_STRENGTH;
+        
+        cell.x = lerp(organicX, mouseX, cursorPull);
+        cell.y = lerp(organicY, mouseY, cursorPull);
         
         // Actualizar edad
         cell.age += deltaTime;
