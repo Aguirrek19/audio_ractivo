@@ -1,0 +1,27 @@
+body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: rgb(15, 3, 55);
+    overflow: hidden;
+    cursor: pointer;
+}
+
+canvas {
+    display: block;
+}
+
+#info {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    opacity: 0.7;
+    pointer-events: none;
+    z-index: 10;
+}
