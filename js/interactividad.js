@@ -1,8 +1,3 @@
-// ============================================
-// VISUALIZADOR DE AUDIO - CELLULAR SYSTEM
-// ============================================
-
-// Variables globales de audio
 let soundFile;
 let amplitude;
 let fft;
@@ -23,12 +18,7 @@ let cellsVisible = 0;
 let lastCellAppearance = 0;
 const cellAppearanceInterval = 1500;
 
-// ============================================
-// FUNCIONES DE P5.JS
-// ============================================
-
 function preload() {
-    // Cargar archivo de audio
     soundFile = loadSound('./audio/butterfly.mp3');
 }
 
@@ -48,6 +38,92 @@ function setup() {
     lastRegenerationTime = millis();
     
     textAlign(CENTER, CENTER);
+}
+
+function initializeCellularSystem() {
+    cells = [];
+    cellsVisible = 0;
+    
+    // Crear células madre (posiciones centrales)
+    let centerX = width / 2;
+    let centerY = height / 2;
+    
+    for (let i = 0; i < NUM_CELLS; i++) {
+        let cell = {
+            // Posición base (centro de la célula)
+            baseX: random(width * 0.2, width * 0.8),
+            baseY: random(height * 0.2, height * 0.8),
+            
+            // Posición actual (con movimiento orgánico)
+            x: 0,
+            y: 0,
+            
+            // Tamaño y salud de la célula
+            size: random(60, 120),
+            health: random(0.7, 1.0),
+            
+            // Movimiento orgánico
+            noiseOffsetX: random(1000),
+            noiseOffsetY: random(2000),
+            noiseSpeed: random(0.001, 0.003),
+            
+            // Estrellas dentro de la célula
+            stars: [],
+            numStars: floor(random(5, 10)),
+            
+            // Color de la célula
+            hue: random(200, 280), // Azul a púrpura
+            
+            // Edad y ciclo de vida
+            age: 0,
+            maxAge: random(20000, 30000),
+            
+            // Conexiones
+            connections: [],
+            
+            // Pulsación
+            pulsePhase: random(TWO_PI),
+            pulseSpeed: random(0.02, 0.05)
+        };
+        
+        // Inicializar posición
+        cell.x = cell.baseX;
+        cell.y = cell.baseY;
+        
+        // Crear estrellas dentro de la célula
+        for (let j = 0; j < cell.numStars; j++) {
+            let angle = random(TWO_PI);
+            let distance = random(cell.size * 0.3, cell.size * 0.8);
+            
+            cell.stars.push({
+                offsetX: cos(angle) * distance,
+                offsetY: sin(angle) * distance,
+                baseOffsetX: cos(angle) * distance,
+                baseOffsetY: sin(angle) * distance,
+                size: random(5, 15),
+                rotationSpeed: random(-0.02, 0.02),
+                rotation: random(TWO_PI)
+            });
+        }
+        
+        cells.push(cell);
+    }
+    
+    // Establecer conexiones entre células cercanas
+    establishConnections();
+}
+
+function establishConnections() {
+    for (let i = 0; i < cells.length; i++) {
+        cells[i].connections = [];
+        for (let j = i + 1; j < cells.length; j++) {
+            let d = dist(cells[i].baseX, cells[i].baseY, cells[j].baseX, cells[j].baseY);
+            if (d < 250) {
+                cells[i].connections.push(j);
+                cells[j].connections.push(i);
+            }
+        }
+    }
 }
 
 function draw() {
@@ -82,202 +158,8 @@ function draw() {
     drawCells(level, spectrum);
 }
 
-function mousePressed() {
-    if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
-        togglePlayback();
-    }
-    return false;
-}
-
-function keyPressed() {
-    if (key === ' ') {
-        togglePlayback();
-        return false;
-    }
-    
-    if (key === 'r' || key === 'R') {
-        startRegeneration();
-    }
-}
-
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
-    initializeCellularSystem();
-}
-
-// ============================================
-// INICIALIZACIÓN DEL SISTEMA CELULAR
-// ============================================
-
-function initializeCellularSystem() {
-    cells = [];
-    cellsVisible = 0;
-    
-    // Crear células madre (posiciones centrales)
-    let centerX = width / 2;
-    let centerY = height / 2;
-    
-    for (let i = 0; i < NUM_CELLS; i++) {
-        let cell = createCell();
-        cells.push(cell);
-    }
-    
-    // Establecer conexiones entre células cercanas
-    establishConnections();
-}
-
-function createCell() {
-    let cell = {
-        // Posición base (centro de la célula)
-        baseX: random(width * 0.2, width * 0.8),
-        baseY: random(height * 0.2, height * 0.8),
-        
-        // Posición actual (con movimiento orgánico)
-        x: 0,
-        y: 0,
-        
-        // Tamaño y salud de la célula
-        size: random(60, 120),
-        health: random(0.7, 1.0),
-        
-        // Movimiento orgánico
-        noiseOffsetX: random(1000),
-        noiseOffsetY: random(2000),
-        noiseSpeed: random(0.001, 0.003),
-        
-        // Estrellas dentro de la célula
-        stars: [],
-        numStars: floor(random(5, 10)),
-        
-        // Color de la célula
-        hue: random(200, 280), // Azul a púrpura
-        
-        // Edad y ciclo de vida
-        age: 0,
-        maxAge: random(20000, 30000),
-        
-        // Conexiones
-        connections: [],
-        
-        // Pulsación
-        pulsePhase: random(TWO_PI),
-        pulseSpeed: random(0.02, 0.05),
-        
-        // Pulso actual
-        currentPulse: 0
-    };
-    
-    // Inicializar posición
-    cell.x = cell.baseX;
-    cell.y = cell.baseY;
-    
-    // Crear estrellas dentro de la célula
-    for (let j = 0; j < cell.numStars; j++) {
-        cell.stars.push(createStar(cell));
-    }
-    
-    return cell;
-}
-
-function createStar(cell) {
-    let angle = random(TWO_PI);
-    let distance = random(cell.size * 0.3, cell.size * 0.8);
-    
-    return {
-        offsetX: cos(angle) * distance,
-        offsetY: sin(angle) * distance,
-        baseOffsetX: cos(angle) * distance,
-        baseOffsetY: sin(angle) * distance,
-        size: random(5, 15),
-        rotationSpeed: random(-0.02, 0.02),
-        rotation: random(TWO_PI)
-    };
-}
-
-function establishConnections() {
-    for (let i = 0; i < cells.length; i++) {
-        cells[i].connections = [];
-        for (let j = i + 1; j < cells.length; j++) {
-            let d = dist(cells[i].baseX, cells[i].baseY, cells[j].baseX, cells[j].baseY);
-            if (d < 250) {
-                cells[i].connections.push(j);
-                cells[j].connections.push(i);
-            }
-        }
-    }
-}
-
-// ============================================
-// ACTUALIZACIÓN DEL SISTEMA
-// ============================================
-
-function updateCellularSystem(level, spectrum) {
-    for (let i = 0; i < cells.length; i++) {
-        let cell = cells[i];
-        
-        // Movimiento orgánico usando ruido Perlin
-        updateCellPosition(cell);
-        
-        // Actualizar edad y salud
-        updateCellHealth(cell);
-        
-        // Pulsación basada en audio
-        updateCellPulse(cell, level);
-        
-        // Actualizar posiciones de estrellas
-        updateCellStars(cell);
-        
-        // Actualizar conexiones
-        updateCellConnections(cell, i);
-    }
-}
-
-function updateCellPosition(cell) {
-    let noiseX = noise(cell.noiseOffsetX + millis() * cell.noiseSpeed);
-    let noiseY = noise(cell.noiseOffsetY + millis() * cell.noiseSpeed);
-    
-    cell.x = cell.baseX + map(noiseX, 0, 1, -30, 30);
-    cell.y = cell.baseY + map(noiseY, 0, 1, -30, 30);
-}
-
-function updateCellHealth(cell) {
-    cell.age += deltaTime;
-    cell.health = map(cell.age, 0, cell.maxAge, 1.0, 0.3);
-}
-
-function updateCellPulse(cell, level) {
-    let pulseAmount = sin(cell.pulsePhase + millis() * cell.pulseSpeed) * 0.5 + 0.5;
-    cell.currentPulse = pulseAmount * level * 2;
-}
-
-function updateCellStars(cell) {
-    for (let j = 0; j < cell.stars.length; j++) {
-        let star = cell.stars[j];
-        let starNoise = noise(cell.noiseOffsetX + j * 100, millis() * 0.001);
-        
-        star.offsetX = star.baseOffsetX + map(starNoise, 0, 1, -10, 10);
-        star.offsetY = star.baseOffsetY + map(starNoise, 0, 1, -10, 10);
-        star.rotation += star.rotationSpeed;
-    }
-}
-
-function updateCellConnections(cell, cellIndex) {
-    cell.connections = [];
-    for (let j = 0; j < cells.length; j++) {
-        if (cellIndex !== j) {
-            let d = dist(cell.x, cell.y, cells[j].x, cells[j].y);
-            if (d < 250) {
-                cell.connections.push(j);
-            }
-        }
-    }
-}
-
-// ============================================
-// DIBUJO DEL FONDO
-// ============================================
-
 function drawCellularBackground() {
+    // Fondo con patrón celular orgánico
     noStroke();
     for (let i = 0; i < width; i += 3) {
         for (let j = 0; j < height; j += 3) {
@@ -291,11 +173,50 @@ function drawCellularBackground() {
     }
 }
 
-// ============================================
-// DIBUJO DE CONEXIONES
-// ============================================
+function updateCellularSystem(level, spectrum) {
+    for (let i = 0; i < cells.length; i++) {
+        let cell = cells[i];
+        
+        // Movimiento orgánico usando ruido Perlin
+        let noiseX = noise(cell.noiseOffsetX + millis() * cell.noiseSpeed);
+        let noiseY = noise(cell.noiseOffsetY + millis() * cell.noiseSpeed);
+        
+        cell.x = cell.baseX + map(noiseX, 0, 1, -30, 30);
+        cell.y = cell.baseY + map(noiseY, 0, 1, -30, 30);
+        
+        // Actualizar edad
+        cell.age += deltaTime;
+        cell.health = map(cell.age, 0, cell.maxAge, 1.0, 0.3);
+        
+        // Pulsación basada en audio
+        let pulseAmount = sin(cell.pulsePhase + millis() * cell.pulseSpeed) * 0.5 + 0.5;
+        cell.currentPulse = pulseAmount * level * 2;
+        
+        // Actualizar posiciones de estrellas dentro de la célula
+        for (let j = 0; j < cell.stars.length; j++) {
+            let star = cell.stars[j];
+            let starNoise = noise(cell.noiseOffsetX + j * 100, millis() * 0.001);
+            
+            star.offsetX = star.baseOffsetX + map(starNoise, 0, 1, -10, 10);
+            star.offsetY = star.baseOffsetY + map(starNoise, 0, 1, -10, 10);
+            star.rotation += star.rotationSpeed;
+        }
+        
+        // Actualizar conexiones
+        cell.connections = [];
+        for (let j = 0; j < cells.length; j++) {
+            if (i !== j) {
+                let d = dist(cell.x, cell.y, cells[j].x, cells[j].y);
+                if (d < 250) {
+                    cell.connections.push(j);
+                }
+            }
+        }
+    }
+}
 
 function drawCellularConnections(level) {
+    // Dibujar conexiones entre células como membranas
     strokeWeight(1.5);
     
     for (let i = 0; i < cells.length; i++) {
@@ -346,10 +267,6 @@ function drawMembraneConnection(x1, y1, x2, y2, distance) {
     
     endShape();
 }
-
-// ============================================
-// DIBUJO DE CÉLULAS
-// ============================================
 
 function drawCells(level, spectrum) {
     for (let i = 0; i < cells.length; i++) {
@@ -416,8 +333,18 @@ function drawCellStars(cell, level, spectrum, alpha) {
         let starX = cell.x + star.offsetX;
         let starY = cell.y + star.offsetY;
         
-        // Calcular tamaño de estrella
-        let starSize = calculateStarSize(star, cell, level, spectrum, j);
+        // Tamaño de estrella basado en audio
+        let baseSize = star.size;
+        let maxSize = 20;
+        let volumeScale = map(level, 0, 0.5, 1, 4);
+        volumeScale = min(volumeScale, maxSize / baseSize);
+        
+        // Variación por frecuencia
+        let freqIndex = floor(map(j, 0, cell.stars.length + cells.length, 0, spectrum.length - 1));
+        let freqValue = spectrum[freqIndex] / 255;
+        let freqScale = map(freqValue, 0, 1, 0.5, 2);
+        
+        let starSize = baseSize * volumeScale * freqScale * cell.health;
         
         // Color basado en la célula madre
         colorMode(HSB, 360, 100, 100, 100);
@@ -435,24 +362,6 @@ function drawCellStars(cell, level, spectrum, alpha) {
     colorMode(RGB, 255);
 }
 
-function calculateStarSize(star, cell, level, spectrum, index) {
-    let baseSize = star.size;
-    let maxSize = 20;
-    let volumeScale = map(level, 0, 0.5, 1, 4);
-    volumeScale = min(volumeScale, maxSize / baseSize);
-    
-    // Variación por frecuencia
-    let freqIndex = floor(map(index, 0, cell.stars.length + cells.length, 0, spectrum.length - 1));
-    let freqValue = spectrum[freqIndex] / 255;
-    let freqScale = map(freqValue, 0, 1, 0.5, 2);
-    
-    return baseSize * volumeScale * freqScale * cell.health;
-}
-
-// ============================================
-// DIBUJO DE ESTRELLAS (ROSA DE LOS VIENTOS)
-// ============================================
-
 function drawWindRoseStar(x, y, size, hue, sat, bri, alpha) {
     noStroke();
     fill(hue, sat, bri, alpha);
@@ -463,7 +372,13 @@ function drawWindRoseStar(x, y, size, hue, sat, bri, alpha) {
     beginShape();
     for (let i = 0; i < 8; i++) {
         let angle = (TWO_PI / 8) * i - PI/2;
-        let radius = (i % 2 === 0) ? size : size * 0.5;
+        let radius;
+        
+        if (i % 2 === 0) {
+            radius = size;
+        } else {
+            radius = size * 0.5;
+        }
         
         let px = cos(angle) * radius;
         let py = sin(angle) * radius;
@@ -473,10 +388,6 @@ function drawWindRoseStar(x, y, size, hue, sat, bri, alpha) {
     
     pop();
 }
-
-// ============================================
-// CONTROL DE REGENERACIÓN
-// ============================================
 
 function startRegeneration() {
     isRegenerating = true;
@@ -499,14 +410,16 @@ function getRegenerationProgress() {
     return (millis() - regenerationStartTime) / regenerationDuration;
 }
 
-// ============================================
-// CONTROL DE REPRODUCCIÓN
-// ============================================
+function mousePressed() {
+    if (mouseX >= 0 && mouseX <= width && mouseY >= 0 && mouseY <= height) {
+        togglePlayback();
+    }
+    return false;
+}
 
 function togglePlayback() {
     if (soundFile.isPlaying()) {
         soundFile.pause();
-        // Efecto visual de pausa
         fill(255, 255, 255, 100);
         noStroke();
         textAlign(CENTER, CENTER);
@@ -522,9 +435,21 @@ function togglePlayback() {
     }
 }
 
-// ============================================
-// PREVENIR SCROLL CON BARRA ESPACIADORA
-// ============================================
+function keyPressed() {
+    if (key === ' ') {
+        togglePlayback();
+        return false;
+    }
+    
+    if (key === 'r' || key === 'R') {
+        startRegeneration();
+    }
+}
+
+function windowResized() {
+    resizeCanvas(windowWidth, windowHeight);
+    initializeCellularSystem();
+}
 
 window.addEventListener('keydown', function(e) {
     if (e.key === ' ' || e.key === 'Spacebar') {
