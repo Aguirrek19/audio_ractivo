@@ -28,7 +28,8 @@ function setup() {
     // Inicializar análisis de audio
     amplitude = new p5.Amplitude();
     fft = new p5.FFT();
-    soundFile.connect(amplitude.input);
+    amplitude.setInput(soundFile);
+    fft.setInput(soundFile);
     
     // Crear el sistema celular
     initializeCellularSystem();
@@ -83,7 +84,8 @@ function initializeCellularSystem() {
             
             // Pulsación
             pulsePhase: random(TWO_PI),
-            pulseSpeed: random(0.02, 0.05)
+            pulseSpeed: random(0.02, 0.05),
+            audioScale: 1
         };
         
         // Inicializar posición
@@ -190,7 +192,10 @@ function updateCellularSystem(level, spectrum) {
         
         // Pulsación basada en audio
         let pulseAmount = sin(cell.pulsePhase + millis() * cell.pulseSpeed) * 0.5 + 0.5;
-        cell.currentPulse = pulseAmount * level * 2;
+        let volumeBoost = constrain(map(level, 0, 0.25, 0, 1), 0, 1);
+        let targetScale = 0.8 + volumeBoost * 1.8 + pulseAmount * volumeBoost * 0.35;
+        cell.audioScale = lerp(cell.audioScale, targetScale, 0.18);
+        cell.currentPulse = pulseAmount * volumeBoost;
         
         // Actualizar posiciones de estrellas dentro de la célula
         for (let j = 0; j < cell.stars.length; j++) {
@@ -287,7 +292,7 @@ function drawCells(level, spectrum) {
 }
 
 function drawCellMembrane(cell, level, alpha) {
-    let membraneSize = cell.size + cell.currentPulse * 15;
+    let membraneSize = cell.size * cell.audioScale;
     let healthAlpha = map(cell.health, 0.3, 1.0, 20, 60) * (alpha / 255);
     
     // Membrana exterior difusa
@@ -311,7 +316,7 @@ function drawCellMembrane(cell, level, alpha) {
 }
 
 function drawCellNucleus(cell, level, alpha) {
-    let nucleusSize = cell.size * 0.3 + cell.currentPulse * 8;
+    let nucleusSize = cell.size * 0.3 * cell.audioScale + cell.currentPulse * 10;
     let healthAlpha = map(cell.health, 0.3, 1.0, 30, 100) * (alpha / 255);
     
     // Núcleo brillante
