@@ -18,7 +18,7 @@ let cellsVisible = 0;
 let lastCellAppearance = 0;
 const cellAppearanceInterval = 1500;
 const CURSOR_ATTRACTION_RADIUS = 420;
-const CURSOR_ATTRACTION_STRENGTH = 0.4;
+const CURSOR_ATTRACTION_STRENGTH = 0.8;
 
 function preload() {
     soundFile = loadSound('./audio/butterfly.mp3');
